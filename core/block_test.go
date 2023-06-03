@@ -1,61 +1,44 @@
 package core
 
 import (
-	"bytes"
 	"testing"
 	"time"
 
+	"github.com/peyzor/xchain/crypto"
 	"github.com/peyzor/xchain/types"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHeader_Encode_Decode(t *testing.T) {
-	hEncode := &Header{
-		Version:   1,
-		PrevBlock: types.RandomHash(),
-		Timestamp: uint64(time.Now().UnixNano()),
-		Height:    10,
-		Nonce:     12345,
+func randomBlock(height uint32) *Block {
+	header := &Header{
+		Version:       1,
+		PrevBlockHash: types.RandomHash(),
+		Height:        height,
+		Timestamp:     time.Now().UnixNano(),
 	}
-	hDecode := &Header{}
-
-	buf := &bytes.Buffer{}
-	assert.Nil(t, hEncode.EncodeBinary(buf))
-	assert.Nil(t, hDecode.DecodeBinary(buf))
-	assert.Equal(t, hEncode, hDecode)
+	tx := Transaction{
+		Data: []byte("foo"),
+	}
+	return NewBlock(header, []Transaction{tx})
 }
 
-func TestBlock_Encode_Decode(t *testing.T) {
-	bEncode := &Block{
-		Header: Header{
-			Version:   1,
-			PrevBlock: types.RandomHash(),
-			Timestamp: uint64(time.Now().UnixNano()),
-			Height:    10,
-			Nonce:     12345,
-		},
-		Transactions: nil,
-	}
-	bDecode := &Block{}
+func TestSignBlock(t *testing.T) {
+	privKey := crypto.GeneratePrivateKey()
+	b := randomBlock(0)
 
-	buf := &bytes.Buffer{}
-	assert.Nil(t, bEncode.EncodeBinary(buf))
-	assert.Nil(t, bDecode.DecodeBinary(buf))
-	assert.Equal(t, bEncode, bDecode)
+	assert.Nil(t, b.Sign(privKey))
+	assert.NotNil(t, b.Signature)
 }
 
-func TestBlockHash(t *testing.T) {
-	b := &Block{
-		Header: Header{
-			Version:   1,
-			PrevBlock: types.RandomHash(),
-			Timestamp: uint64(time.Now().UnixNano()),
-			Height:    10,
-			Nonce:     12345,
-		},
-		Transactions: []Transaction{},
-	}
+func TestBlockVerify(t *testing.T) {
+	privKey := crypto.GeneratePrivateKey()
+	b := randomBlock(0)
 
-	h := b.Hash()
-	assert.False(t, h.IsZero())
+	assert.Nil(t, b.Sign(privKey))
+	assert.Nil(t, b.Verify())
+
+	otherPrivKey := crypto.GeneratePrivateKey()
+	b.Validator = otherPrivKey.PublicKey()
+
+	assert.NotNil(t, b.Verify())
 }
