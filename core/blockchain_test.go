@@ -29,6 +29,8 @@ func TestNewBlockChain(t *testing.T) {
 func TestHasBlock(t *testing.T) {
 	bc := newBlockchainWithGenesis(t)
 	assert.True(t, bc.HasBlock(0))
+	assert.False(t, bc.HasBlock(1))
+	assert.False(t, bc.HasBlock(100))
 }
 
 func TestGetHeader(t *testing.T) {
@@ -47,6 +49,7 @@ func TestGetHeader(t *testing.T) {
 func TestAddBlockTooHigh(t *testing.T) {
 	bc := newBlockchainWithGenesis(t)
 
+	assert.Nil(t, bc.AddBlock(randomBlockWithSignature(t, 1, getPrevBlockHash(t, bc, uint32(1)))))
 	assert.NotNil(t, bc.AddBlock(randomBlockWithSignature(t, 3, types.Hash{})))
 }
 
