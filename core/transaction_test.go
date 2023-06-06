@@ -31,3 +31,12 @@ func TestVerifyTransaction(t *testing.T) {
 
 	assert.NotNil(t, tx.Verify())
 }
+
+func randomTxWithSignature(t *testing.T) *Transaction {
+	privKey := crypto.GeneratePrivateKey()
+	tx := &Transaction{
+		Data: []byte("foo"),
+	}
+	assert.Nil(t, tx.Sign(privKey))
+	return tx
+}

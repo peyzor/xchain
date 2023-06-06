@@ -43,6 +43,10 @@ func NewBlock(h *Header, txs []Transaction) *Block {
 	}
 }
 
+func (b *Block) AddTransaction(tx *Transaction) {
+	b.Transactions = append(b.Transactions, *tx)
+}
+
 func (b *Block) Sign(privKey crypto.PrivateKey) error {
 	sig, err := privKey.Sign(b.Header.Bytes())
 	if err != nil {
@@ -61,6 +65,12 @@ func (b *Block) Verify() error {
 	}
 	if !b.Signature.Verify(b.Validator, b.Header.Bytes()) {
 		return fmt.Errorf("block has invalid signature")
+	}
+
+	for _, tx := range b.Transactions {
+		if err := tx.Verify(); err != nil {
+			return err
+		}
 	}
 
 	return nil
