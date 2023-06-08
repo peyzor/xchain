@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/peyzor/xchain/crypto"
+	"github.com/peyzor/xchain/types"
 )
 
 type Transaction struct {
@@ -11,6 +12,10 @@ type Transaction struct {
 
 	From      crypto.PublicKey
 	Signature *crypto.Signature
+}
+
+func (tx *Transaction) Hash(hasher Hasher[*Transaction]) types.Hash {
+	return hasher.Hash(tx)
 }
 
 func (tx *Transaction) Sign(privKey crypto.PrivateKey) error {
