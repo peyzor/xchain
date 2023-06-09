@@ -1,6 +1,8 @@
 package network
 
 import (
+	"fmt"
+
 	"github.com/peyzor/xchain/core"
 	"github.com/peyzor/xchain/types"
 )
@@ -18,7 +20,7 @@ func NewTxPool() *TxPool {
 func (p *TxPool) Add(tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
 	if p.Has(hash) {
-		return nil
+		return fmt.Errorf("transaction (%s) already exists in mempool", hash)
 	}
 
 	p.transactions[hash] = tx

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/peyzor/xchain/core"
 	"github.com/peyzor/xchain/crypto"
+	"github.com/sirupsen/logrus"
 )
 
 type ServerOpts struct {
@@ -50,6 +52,22 @@ free:
 	}
 
 	fmt.Println("server shutdown")
+}
+
+func (s *Server) handleTransaction(tx *core.Transaction) error {
+	if err := tx.Verify(); err != nil {
+		return err
+	}
+
+	if err := s.memPool.Add(tx); err != nil {
+		logrus.Infoln(err)
+		return err
+	}
+
+	logrus.WithFields(logrus.Fields{
+		"hash": tx.Hash(core.TxHasher{}),
+	}).Info("adding new tx to the mempool")
+	return nil
 }
 
 func (s *Server) createNewBlock() error {

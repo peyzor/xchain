@@ -18,6 +18,10 @@ func TestTxPoolAddTx(t *testing.T) {
 	assert.Nil(t, p.Add(tx))
 	assert.Equal(t, p.Len(), 1)
 
+	txx := core.NewTransaction([]byte("foo"))
+	assert.NotNil(t, p.Add(txx))
+	assert.Equal(t, p.Len(), 1)
+
 	p.Flush()
 	assert.Equal(t, p.Len(), 0)
 }

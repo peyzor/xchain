@@ -12,6 +12,9 @@ type Transaction struct {
 
 	From      crypto.PublicKey
 	Signature *crypto.Signature
+
+	// cached version of the tx data hash
+	hash types.Hash
 }
 
 func NewTransaction(data []byte) *Transaction {
@@ -21,7 +24,10 @@ func NewTransaction(data []byte) *Transaction {
 }
 
 func (tx *Transaction) Hash(hasher Hasher[*Transaction]) types.Hash {
-	return hasher.Hash(tx)
+	if tx.hash.IsZero() {
+		tx.hash = hasher.Hash(tx)
+	}
+	return tx.hash
 }
 
 func (tx *Transaction) Sign(privKey crypto.PrivateKey) error {
