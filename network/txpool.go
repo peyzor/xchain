@@ -1,7 +1,6 @@
 package network
 
 import (
-	"fmt"
 	"sort"
 
 	"github.com/peyzor/xchain/core"
@@ -55,10 +54,6 @@ func (p *TxPool) Transactions() []*core.Transaction {
 
 func (p *TxPool) Add(tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
-	if p.Has(hash) {
-		return fmt.Errorf("transaction (%s) already exists in mempool", hash)
-	}
-
 	p.transactions[hash] = tx
 	return nil
 }

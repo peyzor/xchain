@@ -21,8 +21,7 @@ func TestTxPoolAddTx(t *testing.T) {
 	assert.Nil(t, p.Add(tx))
 	assert.Equal(t, p.Len(), 1)
 
-	txx := core.NewTransaction(txData)
-	assert.NotNil(t, p.Add(txx))
+	_ = core.NewTransaction(txData)
 	assert.Equal(t, p.Len(), 1)
 
 	p.Flush()
