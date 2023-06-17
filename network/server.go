@@ -2,9 +2,10 @@ package network
 
 import (
 	"bytes"
-	"fmt"
+	"os"
 	"time"
 
+	"github.com/go-kit/log"
 	"github.com/peyzor/xchain/core"
 	"github.com/peyzor/xchain/crypto"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,8 @@ import (
 var defaultBlockTime = 5 * time.Second
 
 type ServerOpts struct {
+	ID            string
+	Logger        log.Logger
 	RPCDecodeFunc RPCDecodeFunc
 	RPCProcessor  RPCProcessor
 	Transports    []Transport
@@ -35,6 +38,11 @@ func NewServer(opts ServerOpts) *Server {
 
 	if opts.RPCDecodeFunc == nil {
 		opts.RPCDecodeFunc = DefaultRPCDecodeFunc
+	}
+
+	if opts.Logger == nil {
+		opts.Logger = log.NewLogfmtLogger(os.Stderr)
+		opts.Logger = log.With(opts.Logger, "ID", opts.ID)
 	}
 	s := &Server{
 		ServerOpts:  opts,
@@ -66,7 +74,7 @@ free:
 		case rpc := <-s.rpcCh:
 			msg, err := s.RPCDecodeFunc(rpc)
 			if err != nil {
-				logrus.Error(err)
+				s.Logger.Log("error", err)
 			}
 
 			if err := s.RPCProcessor.ProcessMessage(msg); err != nil {
@@ -78,11 +86,16 @@ free:
 		}
 	}
 
-	fmt.Println("server shutdown")
+	s.Logger.Log("msg", "server is shutting down")
 }
 
 func (s *Server) validatorLoop() {
 	ticker := time.NewTicker(s.BlockTime)
+
+	s.Logger.Log(
+		"msg", "starting validator loop",
+		"blockTime", s.BlockTime,
+	)
 
 	for {
 		<-ticker.C
@@ -113,10 +126,6 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 	hash := tx.Hash(core.TxHasher{})
 
 	if s.memPool.Has(hash) {
-		logrus.WithFields(logrus.Fields{
-			"hash": hash,
-		}).Info("transaction already in mempool")
-
 		return nil
 	}
 
@@ -126,9 +135,11 @@ func (s *Server) processTransaction(tx *core.Transaction) error {
 
 	tx.SetFirstSeen(time.Now().UnixNano())
 
-	logrus.WithFields(logrus.Fields{
-		"hash": hash,
-	}).Info("adding new tx to the mempool")
+	s.Logger.Log(
+		"msg", "adding new tx to mempool",
+		"hash", hash,
+		"mempoolLength", s.memPool.Len(),
+	)
 
 	go s.broadcastTx(tx)
 
@@ -146,7 +157,7 @@ func (s *Server) broadcastTx(tx *core.Transaction) error {
 }
 
 func (s *Server) createNewBlock() error {
-	fmt.Println("creating a new block")
+	s.Logger.Log("msg", "creating a new block")
 	return nil
 }
 
