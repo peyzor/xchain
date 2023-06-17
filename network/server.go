@@ -156,11 +156,6 @@ func (s *Server) broadcastTx(tx *core.Transaction) error {
 	return s.broadcast(msg.Bytes())
 }
 
-func (s *Server) createNewBlock() error {
-	s.Logger.Log("msg", "creating a new block")
-	return nil
-}
-
 func (s *Server) initTransport() {
 	for _, tr := range s.Transports {
 		go func(tr Transport) {
@@ -170,4 +165,9 @@ func (s *Server) initTransport() {
 		}(tr)
 
 	}
+}
+
+func (s *Server) createNewBlock() error {
+	s.Logger.Log("msg", "creating a new block")
+	return nil
 }
