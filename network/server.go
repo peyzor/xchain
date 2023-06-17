@@ -8,6 +8,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/peyzor/xchain/core"
 	"github.com/peyzor/xchain/crypto"
+	"github.com/peyzor/xchain/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,12 +27,13 @@ type ServerOpts struct {
 type Server struct {
 	ServerOpts
 	memPool     *TxPool
+	chain       *core.Blockchain
 	isValidator bool
 	rpcCh       chan RPC
 	quitCh      chan struct{}
 }
 
-func NewServer(opts ServerOpts) *Server {
+func NewServer(opts ServerOpts) (*Server, error) {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
@@ -44,9 +46,15 @@ func NewServer(opts ServerOpts) *Server {
 		opts.Logger = log.NewLogfmtLogger(os.Stderr)
 		opts.Logger = log.With(opts.Logger, "ID", opts.ID)
 	}
+
+	chain, err := core.NewBlockchain(genesisBlock())
+	if err != nil {
+		return nil, err
+	}
 	s := &Server{
 		ServerOpts:  opts,
 		memPool:     NewTxPool(),
+		chain:       chain,
 		isValidator: opts.PrivateKey != nil,
 		rpcCh:       make(chan RPC),
 		quitCh:      make(chan struct{}, 1),
@@ -62,7 +70,7 @@ func NewServer(opts ServerOpts) *Server {
 		go s.validatorLoop()
 	}
 
-	return s
+	return s, nil
 }
 
 func (s *Server) Start() {
@@ -168,6 +176,35 @@ func (s *Server) initTransport() {
 }
 
 func (s *Server) createNewBlock() error {
-	s.Logger.Log("msg", "creating a new block")
+	currentHeader, err := s.chain.GetHeader(s.chain.Height())
+	if err != nil {
+		return err
+	}
+
+	block, err := core.NewBlockFromPrevHeader(currentHeader, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := block.Sign(*s.PrivateKey); err != nil {
+		return err
+	}
+
+	if err := s.chain.AddBlock(block); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func genesisBlock() *core.Block {
+	header := &core.Header{
+		Version:   1,
+		DataHash:  types.Hash{},
+		Height:    0,
+		Timestamp: time.Now().UnixNano(),
+	}
+
+	b, _ := core.NewBlock(header, nil)
+	return b
 }

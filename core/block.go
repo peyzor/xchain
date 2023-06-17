@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
+	"time"
 
 	"github.com/peyzor/xchain/crypto"
 	"github.com/peyzor/xchain/types"
@@ -36,11 +37,27 @@ type Block struct {
 	hash types.Hash
 }
 
-func NewBlock(h *Header, txs []Transaction) *Block {
+func NewBlock(h *Header, txx []Transaction) (*Block, error) {
 	return &Block{
 		Header:       h,
-		Transactions: txs,
+		Transactions: txx,
+	}, nil
+}
+
+func NewBlockFromPrevHeader(prevHeader *Header, txx []Transaction) (*Block, error) {
+	dataHash, err := CalculateDataHash(txx)
+	if err != nil {
+		return nil, err
 	}
+	header := &Header{
+		Version:       1,
+		Height:        prevHeader.Height + 1,
+		DataHash:      dataHash,
+		PrevBlockHash: BlockHasher{}.Hash(prevHeader),
+		Timestamp:     time.Now().UnixNano(),
+	}
+
+	return NewBlock(header, txx)
 }
 
 func (b *Block) AddTransaction(tx *Transaction) {
