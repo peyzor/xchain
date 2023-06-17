@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/peyzor/xchain/core"
+	"github.com/sirupsen/logrus"
 )
 
 type MessageType byte
@@ -51,6 +52,11 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 	if err := gob.NewDecoder(rpc.Payload).Decode(&msg); err != nil {
 		return nil, fmt.Errorf("failed to decode message from %s: %s", rpc.From, err)
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"from": rpc.From,
+		"type": msg.Header,
+	}).Debug("incoming message")
 
 	switch msg.Header {
 	case MessageTypeTx:
