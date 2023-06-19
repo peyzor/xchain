@@ -181,7 +181,9 @@ func (s *Server) createNewBlock() error {
 		return err
 	}
 
-	block, err := core.NewBlockFromPrevHeader(currentHeader, nil)
+	txx := s.memPool.Transactions()
+
+	block, err := core.NewBlockFromPrevHeader(currentHeader, txx)
 	if err != nil {
 		return err
 	}
