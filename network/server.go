@@ -196,6 +196,7 @@ func (s *Server) createNewBlock() error {
 		return err
 	}
 
+	s.memPool.Flush()
 	return nil
 }
 
